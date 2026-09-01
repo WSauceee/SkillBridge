@@ -38,5 +38,5 @@ fun SkillBridgeApp() {
     val repository = remember { AuthRepository(database.userDao()) }
     val authViewModel: AuthViewModel = viewModel(factory = AuthViewModelFactory(repository))
 
-    NavGraph(authViewModel = authViewModel)
+    NavGraph(authViewModel = authViewModel, repository = repository)
 }

@@ -14,4 +14,8 @@ class AuthRepository(private val userDao: UserDao) {
     suspend fun login(email: String, password: String): User? {
         return userDao.login(email, password)
     }
+
+    suspend fun updateProfile(user: User) {
+        userDao.updateUser(user)
+    }
 }

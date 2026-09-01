@@ -1,31 +1,34 @@
 package com.example.skillbridge.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.skillbridge.data.User
+import com.example.skillbridge.data.AccountType
+import com.example.skillbridge.data.AuthRepository
 import com.example.skillbridge.ui.screens.HomeScreen
+import com.example.skillbridge.ui.screens.JobSeekerHomeScreen
 import com.example.skillbridge.ui.screens.LoginScreen
 import com.example.skillbridge.ui.screens.RegisterScreen
+import com.example.skillbridge.ui.screens.ResumeCreatorScreen
 import com.example.skillbridge.ui.screens.WelcomeScreen
 import com.example.skillbridge.viewmodel.AuthViewModel
+import com.example.skillbridge.viewmodel.ProfileViewModel
+import com.example.skillbridge.viewmodel.ProfileViewModelFactory
 
 object Routes {
     const val WELCOME = "welcome"
     const val LOGIN = "login"
     const val REGISTER = "register"
     const val HOME = "home"
+    const val RESUME_CREATOR = "resume_creator"
 }
 
 @Composable
-fun NavGraph(authViewModel: AuthViewModel) {
+fun NavGraph(authViewModel: AuthViewModel, repository: AuthRepository) {
     val navController = rememberNavController()
-    var loggedInUser by remember { mutableStateOf<User?>(null) }
+    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(repository))
 
     NavHost(navController = navController, startDestination = Routes.WELCOME) {
         composable(Routes.WELCOME) {
@@ -38,7 +41,7 @@ fun NavGraph(authViewModel: AuthViewModel) {
             LoginScreen(
                 viewModel = authViewModel,
                 onLoginSuccess = { user ->
-                    loggedInUser = user
+                    profileViewModel.setUser(user)
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.WELCOME) { inclusive = true }
                     }
@@ -50,7 +53,7 @@ fun NavGraph(authViewModel: AuthViewModel) {
             RegisterScreen(
                 viewModel = authViewModel,
                 onRegisterSuccess = { user ->
-                    loggedInUser = user
+                    profileViewModel.setUser(user)
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.WELCOME) { inclusive = true }
                     }
@@ -59,7 +62,27 @@ fun NavGraph(authViewModel: AuthViewModel) {
             )
         }
         composable(Routes.HOME) {
-            loggedInUser?.let { HomeScreen(it) }
+            profileViewModel.currentUser?.let { user ->
+                if (user.accountType == AccountType.JOB_SEEKER) {
+                    JobSeekerHomeScreen(
+                        user = user,
+                        onResumeCreatorClick = { navController.navigate(Routes.RESUME_CREATOR) },
+                        onAddEducation = profileViewModel::addEducation,
+                        onAddSkill = profileViewModel::addSkill,
+                        onAddExperience = profileViewModel::addExperience
+                    )
+                } else {
+                    HomeScreen(user)
+                }
+            }
+        }
+        composable(Routes.RESUME_CREATOR) {
+            profileViewModel.currentUser?.let { user ->
+                ResumeCreatorScreen(
+                    user = user,
+                    onBackClick = { navController.navigateUp() }
+                )
+            }
         }
     }
 }

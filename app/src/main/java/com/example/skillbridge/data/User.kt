@@ -15,5 +15,8 @@ data class User(
     val email: String,
     val password: String,        // plain text for assignment simplicity — see note at the end
     val accountType: AccountType,
-    val extraInfo: String? = null // job title (Job Seeker) or industry (Business)
+    val extraInfo: String? = null, // job title (Job Seeker) or industry (Business)
+    val educationRaw: String? = null,  // encoded list — see ProfileModels.kt
+    val skillsRaw: String? = null,     // encoded list — see ProfileModels.kt
+    val experienceRaw: String? = null  // encoded list — see ProfileModels.kt
 )
