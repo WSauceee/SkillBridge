@@ -18,5 +18,10 @@ data class User(
     val extraInfo: String? = null, // job title (Job Seeker) or industry (Business)
     val educationRaw: String? = null,  // encoded list — see ProfileModels.kt
     val skillsRaw: String? = null,     // encoded list — see ProfileModels.kt
-    val experienceRaw: String? = null  // encoded list — see ProfileModels.kt
+    val experienceRaw: String? = null,  // encoded list — see ProfileModels.kt
+    
+    // Business specific fields
+    val companyDescription: String? = null,
+    val companyWebsite: String? = null,
+    val companyLocation: String? = null
 )

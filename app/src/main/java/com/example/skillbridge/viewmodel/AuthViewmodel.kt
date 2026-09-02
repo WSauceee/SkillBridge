@@ -78,6 +78,10 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     fun resetState() {
         uiState = AuthUiState.Idle
     }
+
+    fun logout() {
+        uiState = AuthUiState.Idle
+    }
 }
 
 class AuthViewModelFactory(private val repository: AuthRepository) : ViewModelProvider.Factory {

@@ -6,6 +6,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -25,7 +26,7 @@ import com.example.skillbridge.data.ExperienceEntry
 import com.example.skillbridge.data.User
 import kotlinx.coroutines.launch
 
-// Colors matched to the reference design, independent of the app's Material theme
+
 private val HeaderBlue = Color(0xFF3169F0)
 private val AccentGreen = Color(0xFF3DBE6B)
 private val ChipBg = Color(0xFFE8EFFE)
@@ -41,7 +42,8 @@ fun JobSeekerHomeScreen(
     onResumeCreatorClick: () -> Unit,
     onAddEducation: (EducationEntry) -> Unit,
     onAddSkill: (String) -> Unit,
-    onAddExperience: (ExperienceEntry) -> Unit
+    onAddExperience: (ExperienceEntry) -> Unit,
+    onLogout: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(BottomTab.HOME) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -80,7 +82,8 @@ fun JobSeekerHomeScreen(
             when (selectedTab) {
                 BottomTab.HOME -> HomeTabContent(
                     user = user,
-                    onPlaceholderClick = { showComingSoon(it) }
+                    onPlaceholderClick = { showComingSoon(it) },
+                    onLogout = onLogout
                 )
                 BottomTab.PROFILE -> ProfileScreen(
                     user = user,
@@ -100,7 +103,8 @@ fun JobSeekerHomeScreen(
 @Composable
 private fun HomeTabContent(
     user: User,
-    onPlaceholderClick: (String) -> Unit
+    onPlaceholderClick: (String) -> Unit,
+    onLogout: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -110,7 +114,8 @@ private fun HomeTabContent(
         HeroHeader(
             userName = user.fullName.substringBefore(" "),
             onBellClick = { onPlaceholderClick("Notifications") },
-            onSearchClick = { onPlaceholderClick("Search") }
+            onSearchClick = { onPlaceholderClick("Search") },
+            onLogout = onLogout
         )
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
@@ -131,7 +136,12 @@ private fun HomeTabContent(
 }
 
 @Composable
-private fun HeroHeader(userName: String, onBellClick: () -> Unit, onSearchClick: () -> Unit) {
+private fun HeroHeader(
+    userName: String,
+    onBellClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onLogout: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -157,13 +167,27 @@ private fun HeroHeader(userName: String, onBellClick: () -> Unit, onSearchClick:
                     color = Color.White.copy(alpha = 0.85f)
                 )
             }
-            IconButton(
-                onClick = onBellClick,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Color.White.copy(alpha = 0.2f))
-            ) {
-                Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = Color.White)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(
+                    onClick = onBellClick,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.2f))
+                ) {
+                    Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = Color.White)
+                }
+                IconButton(
+                    onClick = onLogout,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.2f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ExitToApp,
+                        contentDescription = "Logout",
+                        tint = Color.White
+                    )
+                }
             }
         }
 

@@ -27,6 +27,10 @@ class ProfileViewModel(private val repository: AuthRepository) : ViewModel() {
         currentUser = user
     }
 
+    fun logout() {
+        currentUser = null
+    }
+
     fun addEducation(entry: EducationEntry) = updateUser { user ->
         user.copy(educationRaw = (user.educationRaw.decodeEducation() + entry).encodeEducation())
     }
@@ -37,6 +41,14 @@ class ProfileViewModel(private val repository: AuthRepository) : ViewModel() {
 
     fun addExperience(entry: ExperienceEntry) = updateUser { user ->
         user.copy(experienceRaw = (user.experienceRaw.decodeExperience() + entry).encodeExperience())
+    }
+
+    fun updateBusinessProfile(description: String, location: String, website: String) = updateUser { user ->
+        user.copy(
+            companyDescription = description,
+            companyLocation = location,
+            companyWebsite = website
+        )
     }
 
     private fun updateUser(transform: (User) -> User) {
