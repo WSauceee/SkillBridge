@@ -25,7 +25,8 @@ fun PostJobScreen(
         location: String,
         salary: String,
         jobType: String,
-        skills: String
+        skills: String,
+        education: String
     ) -> Unit
 ) {
 
@@ -36,6 +37,7 @@ fun PostJobScreen(
     var salary by remember { mutableStateOf("") }
     var jobType by remember { mutableStateOf("") }
     var skills by remember { mutableStateOf("") }
+    var education by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -100,6 +102,13 @@ fun PostJobScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
+        OutlinedTextField(
+            value = education,
+            onValueChange = { education = it },
+            label = { Text("Required Education Level") },
+            modifier = Modifier.fillMaxWidth()
+        )
+
         Button(
             onClick = {
 
@@ -116,7 +125,8 @@ fun PostJobScreen(
                         location,
                         salary,
                         jobType,
-                        skills
+                        skills,
+                        education
                     )
                 }
             },

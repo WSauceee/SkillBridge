@@ -22,5 +22,7 @@ data class Job(
 
     val jobType: String,
 
-    val requiredSkills: String
+    val requiredSkills: String,
+
+    val requiredEducation: String
 )

@@ -38,7 +38,8 @@ class JobProviderViewModel(
         location: String,
         salary: String,
         jobType: String,
-        requiredSkills: String
+        requiredSkills: String,
+        requiredEducation: String
     ) {
 
         viewModelScope.launch {
@@ -51,7 +52,8 @@ class JobProviderViewModel(
                 location = location,
                 salary = salary,
                 jobType = jobType,
-                requiredSkills = requiredSkills
+                requiredSkills = requiredSkills,
+                requiredEducation = requiredEducation
             )
 
             repository.addJob(job)

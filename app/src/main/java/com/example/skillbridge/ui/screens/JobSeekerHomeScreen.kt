@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.skillbridge.data.EducationEntry
 import com.example.skillbridge.data.ExperienceEntry
+import com.example.skillbridge.data.Job
 import com.example.skillbridge.data.User
 import kotlinx.coroutines.launch
 
@@ -39,6 +40,7 @@ private enum class BottomTab(val label: String) {
 @Composable
 fun JobSeekerHomeScreen(
     user: User,
+    jobs: List<Job>,
     onResumeCreatorClick: () -> Unit,
     onAddEducation: (EducationEntry) -> Unit,
     onAddSkill: (String) -> Unit,
@@ -82,8 +84,10 @@ fun JobSeekerHomeScreen(
             when (selectedTab) {
                 BottomTab.HOME -> HomeTabContent(
                     user = user,
+                    jobs = jobs,
                     onPlaceholderClick = { showComingSoon(it) },
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    onSeeAllJobs = { selectedTab = BottomTab.JOBS }
                 )
                 BottomTab.PROFILE -> ProfileScreen(
                     user = user,
@@ -92,8 +96,27 @@ fun JobSeekerHomeScreen(
                     onAddExperience = onAddExperience,
                     onGenerateResumeClick = onResumeCreatorClick
                 )
-                BottomTab.JOBS -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Jobs — coming soon", color = Color.Gray)
+                BottomTab.JOBS -> Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        "All Jobs",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (jobs.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            Text("No jobs available yet", color = Color.Gray)
+                        }
+                    } else {
+                        jobs.forEach { job ->
+                            JobCard(job = job, onClick = { showComingSoon("Job Details") })
+                        }
+                    }
                 }
             }
         }
@@ -103,8 +126,10 @@ fun JobSeekerHomeScreen(
 @Composable
 private fun HomeTabContent(
     user: User,
+    jobs: List<Job>,
     onPlaceholderClick: (String) -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onSeeAllJobs: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -124,9 +149,14 @@ private fun HomeTabContent(
             StatCard(Icons.Filled.Work, "5", "Jobs Saved", Modifier.fillMaxWidth())
 
             Spacer(Modifier.height(24.dp))
-            SectionHeader("Recommended Job") { onPlaceholderClick("Recommended jobs") }
+            SectionHeader("Latest Job", onSeeAllJobs)
             Spacer(Modifier.height(12.dp))
-            RecommendedJobCard(onClick = { onPlaceholderClick("Job details") })
+            
+            if (jobs.isEmpty()) {
+                Text("No jobs available", color = Color.Gray, modifier = Modifier.padding(vertical = 8.dp))
+            } else {
+                JobCard(job = jobs.first(), onClick = { onPlaceholderClick("Job details") })
+            }
 
             Spacer(Modifier.height(20.dp))
             InternshipBanner(onClick = { onPlaceholderClick("Internships") })
@@ -246,7 +276,7 @@ private fun SectionHeader(title: String, onSeeAllClick: () -> Unit) {
 }
 
 @Composable
-private fun RecommendedJobCard(onClick: () -> Unit) {
+private fun JobCard(job: Job, onClick: () -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -262,16 +292,27 @@ private fun RecommendedJobCard(onClick: () -> Unit) {
                     }
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text("Software Developer", fontWeight = FontWeight.Bold)
-                        Text("ABC Technology", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        Text(job.title, fontWeight = FontWeight.Bold)
+                        Text(job.companyName, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }
                 }
-                Text("RM3,500/mo", color = AccentGreen, fontWeight = FontWeight.SemiBold)
+                Text(job.salary, color = AccentGreen, fontWeight = FontWeight.SemiBold)
             }
             Spacer(Modifier.height(12.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf("Java", "SQL", "React").forEach { SkillChip(it) }
+            
+            val skills = job.requiredSkills.split(",").filter { it.isNotBlank() }
+            if (skills.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    skills.take(3).forEach { SkillChip(it.trim()) }
+                }
             }
+            
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = job.location + " • " + job.jobType + " • " + job.requiredEducation,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
         }
     }
 }

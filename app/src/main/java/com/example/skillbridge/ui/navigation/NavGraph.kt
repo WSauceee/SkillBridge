@@ -24,6 +24,8 @@ import com.example.skillbridge.ui.screens.WelcomeScreen
 import com.example.skillbridge.viewmodel.AuthViewModel
 import com.example.skillbridge.viewmodel.JobProviderViewModel
 import com.example.skillbridge.viewmodel.JobProviderViewModelFactory
+import com.example.skillbridge.viewmodel.JobSeekerViewModel
+import com.example.skillbridge.viewmodel.JobSeekerViewModelFactory
 import com.example.skillbridge.viewmodel.ProfileViewModel
 import com.example.skillbridge.viewmodel.ProfileViewModelFactory
 
@@ -61,6 +63,11 @@ fun NavGraph(
     val jobProviderViewModel: JobProviderViewModel =
         viewModel(
             factory = JobProviderViewModelFactory(jobRepository)
+        )
+
+    val jobSeekerViewModel: JobSeekerViewModel =
+        viewModel(
+            factory = JobSeekerViewModelFactory(jobRepository)
         )
 
     val handleLogout = {
@@ -154,6 +161,11 @@ fun NavGraph(
 
                         user = user,
 
+                        jobs = jobSeekerViewModel
+                            .jobs
+                            .collectAsState()
+                            .value,
+
                         onResumeCreatorClick = {
                             navController.navigate(
                                 Routes.RESUME_CREATOR
@@ -228,7 +240,8 @@ fun NavGraph(
                             location,
                             salary,
                             jobType,
-                            skills ->
+                            skills,
+                            education ->
 
                         jobProviderViewModel.addJob(
 
@@ -246,7 +259,9 @@ fun NavGraph(
 
                             jobType = jobType,
 
-                            requiredSkills = skills
+                            requiredSkills = skills,
+
+                            requiredEducation = education
                         )
 
                         navController.navigateUp()
