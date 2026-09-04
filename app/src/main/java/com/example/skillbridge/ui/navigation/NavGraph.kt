@@ -58,7 +58,7 @@ fun NavGraph(
 
     val database = AppDatabase.getDatabase(context)
 
-    val jobRepository = JobRepository(database.jobDao())
+    val jobRepository = JobRepository(database.jobDao(), database.jobApplicationDao())
 
     val jobProviderViewModel: JobProviderViewModel =
         viewModel(
@@ -157,12 +157,19 @@ fun NavGraph(
 
                 if (user.accountType == AccountType.JOB_SEEKER) {
 
+                    jobSeekerViewModel.loadApplications(user.id)
+
                     JobSeekerHomeScreen(
 
                         user = user,
 
                         jobs = jobSeekerViewModel
                             .jobs
+                            .collectAsState()
+                            .value,
+
+                        applications = jobSeekerViewModel
+                            .applications
                             .collectAsState()
                             .value,
 
@@ -181,12 +188,17 @@ fun NavGraph(
                         onAddExperience =
                             profileViewModel::addExperience,
 
+                        onApply = { job ->
+                            jobSeekerViewModel.applyForJob(job.id, user.id)
+                        },
+
                         onLogout = handleLogout
                     )
 
                 } else {
 
                     jobProviderViewModel.loadJobs(user.id)
+                    jobProviderViewModel.loadApplications(user.id)
 
                     JobProviderHomeScreen(
 
@@ -194,6 +206,11 @@ fun NavGraph(
 
                         jobs = jobProviderViewModel
                             .jobs
+                            .collectAsState()
+                            .value,
+
+                        applications = jobProviderViewModel
+                            .applications
                             .collectAsState()
                             .value,
 
@@ -209,6 +226,10 @@ fun NavGraph(
                             jobProviderViewModel.deleteJob(
                                 job
                             )
+                        },
+
+                        onAcceptApplication = { applicationId ->
+                            jobProviderViewModel.acceptApplication(applicationId)
                         },
 
                         onLogout = handleLogout,

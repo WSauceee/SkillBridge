@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.skillbridge.data.Job
+import com.example.skillbridge.data.JobApplication
 import com.example.skillbridge.data.User
 import kotlinx.coroutines.launch
 
@@ -33,7 +34,7 @@ private val ChipBg = Color(0xFFE8EFFE)
 private val DangerRed = Color(0xFFE53935)
 
 private enum class ProviderTab(val label: String) {
-    DASHBOARD("Dashboard"), PROFILE("Profile")
+    DASHBOARD("Dashboard"), APPLICATIONS("Applications"), PROFILE("Profile")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,8 +42,10 @@ private enum class ProviderTab(val label: String) {
 fun JobProviderHomeScreen(
     user: User,
     jobs: List<Job>,
+    applications: List<JobApplication>,
     onPostJobClick: () -> Unit,
     onDeleteJob: (Job) -> Unit,
+    onAcceptApplication: (Int) -> Unit,
     onLogout: () -> Unit,
     onUpdateProfile: (String, String, String) -> Unit
 ) {
@@ -63,6 +66,12 @@ fun JobProviderHomeScreen(
                     onClick = { selectedTab = ProviderTab.DASHBOARD },
                     icon = { Icon(Icons.Filled.Home, contentDescription = "Dashboard") },
                     label = { Text("Dashboard") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == ProviderTab.APPLICATIONS,
+                    onClick = { selectedTab = ProviderTab.APPLICATIONS },
+                    icon = { Icon(Icons.Filled.Work, contentDescription = "Applications") },
+                    label = { Text("Applications") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == ProviderTab.PROFILE,
@@ -93,6 +102,12 @@ fun JobProviderHomeScreen(
                     onLogout = onLogout,
                     onPlaceholderClick = { showMessage(it) }
                 )
+                ProviderTab.APPLICATIONS -> ApplicationsTabContent(
+                    user = user,
+                    applications = applications,
+                    jobs = jobs,
+                    onAcceptApplication = onAcceptApplication
+                )
                 ProviderTab.PROFILE -> CompanyProfileContent(
                     user = user,
                     onUpdateProfile = { desc, loc, web ->
@@ -100,6 +115,108 @@ fun JobProviderHomeScreen(
                         showMessage("Profile updated successfully")
                     }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ApplicationsTabContent(
+    user: User,
+    applications: List<JobApplication>,
+    jobs: List<Job>,
+    onAcceptApplication: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                .background(HeaderBlue)
+                .padding(horizontal = 20.dp, vertical = 24.dp)
+        ) {
+            Text("Job Applications", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+            Spacer(Modifier.height(4.dp))
+            Text("Review candidates who applied for your jobs", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
+        }
+
+        Column(modifier = Modifier.padding(20.dp)) {
+            if (applications.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text("No applications received yet", color = Color.Gray)
+                }
+            } else {
+                applications.forEach { app ->
+                    val job = jobs.find { it.id == app.jobId }
+                    ApplicationCard(
+                        application = app,
+                        jobTitle = job?.title ?: "Unknown Job",
+                        onAcceptClick = { onAcceptApplication(app.id) }
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ApplicationCard(
+    application: JobApplication,
+    jobTitle: String,
+    onAcceptClick: () -> Unit
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("Candidate ID: ${application.seekerId}", fontWeight = FontWeight.Bold)
+                    Text("Applied for: $jobTitle", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = when(application.status) {
+                        "Pending" -> Color(0xFFFFF3E0)
+                        "Accepted" -> Color(0xFFE8F5E9)
+                        else -> Color(0xFFFFEBEE)
+                    }
+                ) {
+                    Text(
+                        application.status,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when(application.status) {
+                            "Pending" -> Color(0xFFEF6C00)
+                            "Accepted" -> Color(0xFF2E7D32)
+                            else -> Color(0xFFC62828)
+                        }
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            val date = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date(application.appliedAt))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Applied on: $date", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                
+                if (application.status == "Pending") {
+                    Button(
+                        onClick = onAcceptClick,
+                        modifier = Modifier.height(32.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)
+                    ) {
+                        Text("Accept", style = MaterialTheme.typography.labelMedium)
+                    }
+                }
             }
         }
     }

@@ -3,6 +3,7 @@ package com.example.skillbridge.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.skillbridge.data.Job
+import com.example.skillbridge.data.JobApplication
 import com.example.skillbridge.data.JobRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,19 +15,32 @@ class JobProviderViewModel(
 ) : ViewModel() {
 
     private val _jobs = MutableStateFlow<List<Job>>(emptyList())
-
     val jobs: StateFlow<List<Job>> = _jobs.asStateFlow()
 
+    private val _applications = MutableStateFlow<List<JobApplication>>(emptyList())
+    val applications: StateFlow<List<JobApplication>> = _applications.asStateFlow()
+
     fun loadJobs(providerId: Int) {
-
         viewModelScope.launch {
-
             repository.getProviderJobs(providerId)
                 .collect { jobList ->
-
                     _jobs.value = jobList
-
                 }
+        }
+    }
+
+    fun loadApplications(providerId: Int) {
+        viewModelScope.launch {
+            repository.getApplicationsForProvider(providerId)
+                .collect { appList ->
+                    _applications.value = appList
+                }
+        }
+    }
+
+    fun acceptApplication(applicationId: Int) {
+        viewModelScope.launch {
+            repository.updateApplicationStatus(applicationId, "Accepted")
         }
     }
 
@@ -41,9 +55,7 @@ class JobProviderViewModel(
         requiredSkills: String,
         requiredEducation: String
     ) {
-
         viewModelScope.launch {
-
             val job = Job(
                 providerId = providerId,
                 companyName = companyName,
@@ -55,23 +67,18 @@ class JobProviderViewModel(
                 requiredSkills = requiredSkills,
                 requiredEducation = requiredEducation
             )
-
             repository.addJob(job)
         }
     }
 
     fun updateJob(job: Job) {
-
         viewModelScope.launch {
-
             repository.updateJob(job)
         }
     }
 
     fun deleteJob(job: Job) {
-
         viewModelScope.launch {
-
             repository.deleteJob(job)
         }
     }

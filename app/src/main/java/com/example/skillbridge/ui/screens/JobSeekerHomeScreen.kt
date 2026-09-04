@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.example.skillbridge.data.EducationEntry
 import com.example.skillbridge.data.ExperienceEntry
 import com.example.skillbridge.data.Job
+import com.example.skillbridge.data.JobApplication
 import com.example.skillbridge.data.User
 import kotlinx.coroutines.launch
 
@@ -33,7 +34,7 @@ private val AccentGreen = Color(0xFF3DBE6B)
 private val ChipBg = Color(0xFFE8EFFE)
 
 private enum class BottomTab(val label: String) {
-    HOME("Home"), JOBS("Jobs"), PROFILE("Profile")
+    HOME("Home"), JOBS("Jobs"), APPLICATIONS("Applications"), PROFILE("Profile")
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,10 +42,12 @@ private enum class BottomTab(val label: String) {
 fun JobSeekerHomeScreen(
     user: User,
     jobs: List<Job>,
+    applications: List<JobApplication>,
     onResumeCreatorClick: () -> Unit,
     onAddEducation: (EducationEntry) -> Unit,
     onAddSkill: (String) -> Unit,
     onAddExperience: (ExperienceEntry) -> Unit,
+    onApply: (Job) -> Unit,
     onLogout: () -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(BottomTab.HOME) }
@@ -72,6 +75,12 @@ fun JobSeekerHomeScreen(
                     label = { Text("Jobs") }
                 )
                 NavigationBarItem(
+                    selected = selectedTab == BottomTab.APPLICATIONS,
+                    onClick = { selectedTab = BottomTab.APPLICATIONS },
+                    icon = { Icon(Icons.Filled.Notifications, contentDescription = "Applications") },
+                    label = { Text("Applications") }
+                )
+                NavigationBarItem(
                     selected = selectedTab == BottomTab.PROFILE,
                     onClick = { selectedTab = BottomTab.PROFILE },
                     icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
@@ -87,7 +96,11 @@ fun JobSeekerHomeScreen(
                     jobs = jobs,
                     onPlaceholderClick = { showComingSoon(it) },
                     onLogout = onLogout,
-                    onSeeAllJobs = { selectedTab = BottomTab.JOBS }
+                    onSeeAllJobs = { selectedTab = BottomTab.JOBS },
+                    onApply = { 
+                        onApply(it)
+                        scope.launch { snackbarHostState.showSnackbar("Applied to ${it.title} successfully") }
+                    }
                 )
                 BottomTab.PROFILE -> ProfileScreen(
                     user = user,
@@ -95,6 +108,10 @@ fun JobSeekerHomeScreen(
                     onAddSkill = onAddSkill,
                     onAddExperience = onAddExperience,
                     onGenerateResumeClick = onResumeCreatorClick
+                )
+                BottomTab.APPLICATIONS -> SeekerApplicationsTabContent(
+                    applications = applications,
+                    jobs = jobs
                 )
                 BottomTab.JOBS -> Column(
                     modifier = Modifier
@@ -114,7 +131,14 @@ fun JobSeekerHomeScreen(
                         }
                     } else {
                         jobs.forEach { job ->
-                            JobCard(job = job, onClick = { showComingSoon("Job Details") })
+                            JobCard(
+                                job = job,
+                                onClick = { showComingSoon("Job Details") },
+                                onApply = {
+                                    onApply(job)
+                                    scope.launch { snackbarHostState.showSnackbar("Applied to ${job.title} successfully") }
+                                }
+                            )
                         }
                     }
                 }
@@ -129,7 +153,8 @@ private fun HomeTabContent(
     jobs: List<Job>,
     onPlaceholderClick: (String) -> Unit,
     onLogout: () -> Unit,
-    onSeeAllJobs: () -> Unit
+    onSeeAllJobs: () -> Unit,
+    onApply: (Job) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -155,12 +180,90 @@ private fun HomeTabContent(
             if (jobs.isEmpty()) {
                 Text("No jobs available", color = Color.Gray, modifier = Modifier.padding(vertical = 8.dp))
             } else {
-                JobCard(job = jobs.first(), onClick = { onPlaceholderClick("Job details") })
+                JobCard(
+                    job = jobs.first(),
+                    onClick = { onPlaceholderClick("Job details") },
+                    onApply = onApply
+                )
             }
 
             Spacer(Modifier.height(20.dp))
             InternshipBanner(onClick = { onPlaceholderClick("Internships") })
             Spacer(Modifier.height(20.dp))
+        }
+    }
+}
+
+@Composable
+private fun SeekerApplicationsTabContent(
+    applications: List<JobApplication>,
+    jobs: List<Job>
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
+                .background(HeaderBlue)
+                .padding(horizontal = 20.dp, vertical = 24.dp)
+        ) {
+            Text("My Applications", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+            Spacer(Modifier.height(4.dp))
+            Text("Track the status of your job applications", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
+        }
+
+        Column(modifier = Modifier.padding(20.dp)) {
+            if (applications.isEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    Text("You haven't applied to any jobs yet", color = Color.Gray)
+                }
+            } else {
+                applications.forEach { app ->
+                    val job = jobs.find { it.id == app.jobId }
+                    SeekerApplicationCard(application = app, jobTitle = job?.title ?: "Unknown Job", companyName = job?.companyName ?: "Unknown Company")
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SeekerApplicationCard(application: JobApplication, jobTitle: String, companyName: String) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text(jobTitle, fontWeight = FontWeight.Bold)
+                    Text(companyName, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                }
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = when(application.status) {
+                        "Pending" -> Color(0xFFFFF3E0)
+                        "Accepted" -> Color(0xFFE8F5E9)
+                        else -> Color(0xFFFFEBEE)
+                    }
+                ) {
+                    Text(
+                        application.status,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when(application.status) {
+                            "Pending" -> Color(0xFFEF6C00)
+                            "Accepted" -> Color(0xFF2E7D32)
+                            else -> Color(0xFFC62828)
+                        }
+                    )
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            val date = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault()).format(java.util.Date(application.appliedAt))
+            Text("Applied on: $date", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
         }
     }
 }
@@ -276,7 +379,7 @@ private fun SectionHeader(title: String, onSeeAllClick: () -> Unit) {
 }
 
 @Composable
-private fun JobCard(job: Job, onClick: () -> Unit) {
+private fun JobCard(job: Job, onClick: () -> Unit, onApply: (Job) -> Unit) {
     Card(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -308,11 +411,25 @@ private fun JobCard(job: Job, onClick: () -> Unit) {
             }
             
             Spacer(Modifier.height(8.dp))
-            Text(
-                text = job.location + " • " + job.jobType + " • " + job.requiredEducation,
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = job.location + " • " + job.jobType,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
+                Button(
+                    onClick = { onApply(job) },
+                    modifier = Modifier.height(32.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = HeaderBlue)
+                ) {
+                    Text("Apply", style = MaterialTheme.typography.labelMedium)
+                }
+            }
         }
     }
 }

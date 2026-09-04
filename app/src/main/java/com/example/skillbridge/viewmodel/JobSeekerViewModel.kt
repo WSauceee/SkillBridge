@@ -3,6 +3,7 @@ package com.example.skillbridge.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.skillbridge.data.Job
+import com.example.skillbridge.data.JobApplication
 import com.example.skillbridge.data.JobRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,9 @@ class JobSeekerViewModel(
     private val _jobs = MutableStateFlow<List<Job>>(emptyList())
     val jobs: StateFlow<List<Job>> = _jobs.asStateFlow()
 
+    private val _applications = MutableStateFlow<List<JobApplication>>(emptyList())
+    val applications: StateFlow<List<JobApplication>> = _applications.asStateFlow()
+
     init {
         loadAllJobs()
     }
@@ -25,6 +29,20 @@ class JobSeekerViewModel(
             repository.getAllJobs().collect { jobList ->
                 _jobs.value = jobList
             }
+        }
+    }
+
+    fun loadApplications(seekerId: Int) {
+        viewModelScope.launch {
+            repository.getApplicationsForSeeker(seekerId).collect { appList ->
+                _applications.value = appList
+            }
+        }
+    }
+
+    fun applyForJob(jobId: Int, seekerId: Int) {
+        viewModelScope.launch {
+            repository.applyForJob(jobId, seekerId)
         }
     }
 }

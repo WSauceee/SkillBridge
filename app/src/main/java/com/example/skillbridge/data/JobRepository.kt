@@ -1,7 +1,8 @@
 package com.example.skillbridge.data
 
 class JobRepository(
-    private val jobDao: JobDao
+    private val jobDao: JobDao,
+    private val jobApplicationDao: JobApplicationDao
 ) {
 
     suspend fun addJob(job: Job) {
@@ -21,4 +22,19 @@ class JobRepository(
 
     fun getAllJobs() =
         jobDao.getAllJobs()
+
+    suspend fun applyForJob(jobId: Int, seekerId: Int) {
+        val application = JobApplication(jobId = jobId, seekerId = seekerId)
+        jobApplicationDao.insertApplication(application)
+    }
+
+    fun getApplicationsForProvider(providerId: Int) =
+        jobApplicationDao.getApplicationsForProvider(providerId)
+
+    fun getApplicationsForSeeker(seekerId: Int) =
+        jobApplicationDao.getApplicationsForSeeker(seekerId)
+
+    suspend fun updateApplicationStatus(applicationId: Int, status: String) {
+        jobApplicationDao.updateApplicationStatus(applicationId, status)
+    }
 }
