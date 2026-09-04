@@ -1,5 +1,7 @@
 package com.example.skillbridge.data
 
+import kotlinx.coroutines.flow.Flow
+
 class JobRepository(
     private val jobDao: JobDao,
     private val jobApplicationDao: JobApplicationDao
@@ -28,7 +30,7 @@ class JobRepository(
         jobApplicationDao.insertApplication(application)
     }
 
-    fun getApplicationsForProvider(providerId: Int) =
+    fun getApplicationsForProvider(providerId: Int): Flow<List<JobApplicationWithSeeker>> =
         jobApplicationDao.getApplicationsForProvider(providerId)
 
     fun getApplicationsForSeeker(seekerId: Int) =

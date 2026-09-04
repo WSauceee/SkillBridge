@@ -23,8 +23,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.skillbridge.data.Job
-import com.example.skillbridge.data.JobApplication
+import com.example.skillbridge.data.JobApplicationWithSeeker
 import com.example.skillbridge.data.User
+import com.example.skillbridge.data.decodeEducation
+import com.example.skillbridge.data.decodeExperience
+import com.example.skillbridge.data.decodeSkills
 import kotlinx.coroutines.launch
 
 // Colors matched to the seeker design
@@ -42,7 +45,7 @@ private enum class ProviderTab(val label: String) {
 fun JobProviderHomeScreen(
     user: User,
     jobs: List<Job>,
-    applications: List<JobApplication>,
+    applications: List<JobApplicationWithSeeker>,
     onPostJobClick: () -> Unit,
     onDeleteJob: (Job) -> Unit,
     onAcceptApplication: (Int) -> Unit,
@@ -123,10 +126,19 @@ fun JobProviderHomeScreen(
 @Composable
 private fun ApplicationsTabContent(
     user: User,
-    applications: List<JobApplication>,
+    applications: List<JobApplicationWithSeeker>,
     jobs: List<Job>,
     onAcceptApplication: (Int) -> Unit
 ) {
+    var selectedApplication by remember { mutableStateOf<JobApplicationWithSeeker?>(null) }
+
+    if (selectedApplication != null) {
+        ApplicantDetailsDialog(
+            seeker = selectedApplication!!.seeker,
+            onDismiss = { selectedApplication = null }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -151,11 +163,12 @@ private fun ApplicationsTabContent(
                 }
             } else {
                 applications.forEach { app ->
-                    val job = jobs.find { it.id == app.jobId }
+                    val job = jobs.find { it.id == app.application.jobId }
                     ApplicationCard(
-                        application = app,
+                        appWithSeeker = app,
                         jobTitle = job?.title ?: "Unknown Job",
-                        onAcceptClick = { onAcceptApplication(app.id) }
+                        onAcceptClick = { onAcceptApplication(app.application.id) },
+                        onClick = { selectedApplication = app }
                     )
                     Spacer(Modifier.height(12.dp))
                 }
@@ -166,15 +179,22 @@ private fun ApplicationsTabContent(
 
 @Composable
 private fun ApplicationCard(
-    application: JobApplication,
+    appWithSeeker: JobApplicationWithSeeker,
     jobTitle: String,
-    onAcceptClick: () -> Unit
+    onAcceptClick: () -> Unit,
+    onClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    val application = appWithSeeker.application
+    val seeker = appWithSeeker.seeker
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text("Candidate ID: ${application.seekerId}", fontWeight = FontWeight.Bold)
+                    Text(seeker.fullName, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     Text("Applied for: $jobTitle", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 }
                 Surface(
@@ -209,7 +229,10 @@ private fun ApplicationCard(
                 
                 if (application.status == "Pending") {
                     Button(
-                        onClick = onAcceptClick,
+                        onClick = { 
+                            // Stop propagation of click to the card
+                            onAcceptClick()
+                        },
                         modifier = Modifier.height(32.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = AccentGreen)
@@ -219,6 +242,74 @@ private fun ApplicationCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ApplicantDetailsDialog(
+    seeker: User,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(seeker.fullName, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                InfoSection(label = "Email", value = seeker.email)
+                seeker.extraInfo?.let { InfoSection(label = "Headline", value = it) }
+
+                val skills = seeker.skillsRaw.decodeSkills()
+                if (skills.isNotEmpty()) {
+                    Text("Skills", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        skills.forEach { SkillChip(it.trim()) }
+                    }
+                }
+
+                val education = seeker.educationRaw.decodeEducation()
+                if (education.isNotEmpty()) {
+                    Text("Education", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                    education.forEach { edu ->
+                        Column {
+                            Text(edu.degree, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            Text("${edu.institution} • ${edu.year}", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        }
+                    }
+                }
+
+                val experience = seeker.experienceRaw.decodeExperience()
+                if (experience.isNotEmpty()) {
+                    Text("Experience", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge)
+                    experience.forEach { exp ->
+                        Column {
+                            Text(exp.jobTitle, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+                            Text(exp.companyAndDuration, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = HeaderBlue)
+            }
+        }
+    )
+}
+
+@Composable
+private fun InfoSection(label: String, value: String) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+        Text(value, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

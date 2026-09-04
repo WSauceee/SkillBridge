@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.skillbridge.data.Job
 import com.example.skillbridge.data.JobApplication
+import com.example.skillbridge.data.JobApplicationWithSeeker
 import com.example.skillbridge.data.JobRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,8 +18,8 @@ class JobProviderViewModel(
     private val _jobs = MutableStateFlow<List<Job>>(emptyList())
     val jobs: StateFlow<List<Job>> = _jobs.asStateFlow()
 
-    private val _applications = MutableStateFlow<List<JobApplication>>(emptyList())
-    val applications: StateFlow<List<JobApplication>> = _applications.asStateFlow()
+    private val _applications = MutableStateFlow<List<JobApplicationWithSeeker>>(emptyList())
+    val applications: StateFlow<List<JobApplicationWithSeeker>> = _applications.asStateFlow()
 
     fun loadJobs(providerId: Int) {
         viewModelScope.launch {
